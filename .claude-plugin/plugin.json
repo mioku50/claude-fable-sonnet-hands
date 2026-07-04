@@ -1,0 +1,21 @@
+{
+  "name": "claude-fable-sonnet-hands",
+  "description": "Claude Code skill: Fable orchestrator/head with Sonnet hands for scouting, coding, verification and final review. Codex, Orca and Haiku are disabled.",
+  "version": "0.1.0",
+  "author": {
+    "name": "mioku50",
+    "url": "https://github.com/mioku50"
+  },
+  "homepage": "https://github.com/mioku50/claude-fable-sonnet-hands",
+  "repository": "https://github.com/mioku50/claude-fable-sonnet-hands",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "skills",
+    "fable",
+    "sonnet",
+    "subagents",
+    "orchestration",
+    "coding-workflow"
+  ]
+}
