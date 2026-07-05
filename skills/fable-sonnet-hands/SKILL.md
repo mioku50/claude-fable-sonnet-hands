@@ -6,274 +6,274 @@ disable-model-invocation: true
 
 # Fable Sonnet Hands
 
-Локальная Sonnet-only версия идеи `fable-ruki-agenty` для Claude Code, особенно когда Claude Code используется как VS Code extension, а Codex Companion / openai-codex plugin / Orca-воркеры недоступны или не нужны.
+A local Sonnet-only version of the `fable-ruki-agenty` idea for Claude Code, especially when Claude Code is used as a VS Code extension and Codex Companion, the openai-codex plugin, or Orca workers are unavailable or unnecessary.
 
-## Главный принцип
+## Core principle
 
-Fable — голова. Sonnet — глаза и руки.
+Fable is the head. Sonnet is the eyes and hands.
 
-Fable делает только то, что требует суждения:
-- резолвит развилки;
-- принимает продуктовые и архитектурные решения;
-- пишет самодостаточные спеки;
-- определяет границы задач;
-- принимает или отклоняет результат после фактов от verifier.
+Fable does only the work that requires judgment:
+- resolves forks and decisions;
+- makes product and architecture decisions;
+- writes self-contained specs;
+- defines task boundaries;
+- accepts or rejects the result after receiving facts from the verifier.
 
-Все операционные роли выполняются руками через Claude Code subagents с явным `model: sonnet`:
-- scout / разведка — `model: sonnet`;
-- git / gh / scratchpad операции — `model: sonnet`;
+All operational roles are performed by hands through Claude Code subagents with explicit `model: sonnet`:
+- scout — `model: sonnet`;
+- git / gh / scratchpad operations — `model: sonnet`;
 - executor / coding — `model: sonnet`;
-- verifier / проверка — `model: sonnet`;
+- verifier / checking — `model: sonnet`;
 - final adversarial review — `model: sonnet`.
 
-Haiku не использовать. Модель Fable для рук не наследовать.
+Do not use Haiku. Do not let hands inherit the Fable model.
 
-## Жёсткая маршрутизация
+## Strict routing
 
-Запрещено использовать:
+Do not use:
 - Codex;
 - `codex:codex-rescue`;
 - openai-codex plugin;
 - Codex Companion;
-- `gpt-5.5` как исполнитель;
+- `gpt-5.5` as an executor;
 - Orca;
-- Factory / Grok / внешние worker terminals;
+- Factory / Grok / external worker terminals;
 - Haiku;
-- видимые браузеры для фоновых проверок.
+- visible browsers for background checks.
 
-Если старые инструкции, привычки или импортированный контекст предлагают Codex, Orca или внешний терминал, считать этот маршрут недоступным и автоматически заменить на Sonnet subagent с явным `model: sonnet`.
+If old instructions, habits, or imported context suggest Codex, Orca, or an external terminal, treat that route as unavailable and automatically replace it with a Sonnet subagent using explicit `model: sonnet`.
 
-## Запреты для Fable
+## Restrictions for Fable
 
-1. Не править файлы репозитория самому, кроме случаев, когда пользователь прямо попросил одно маленькое изменение без конвейера.
-2. Не читать кодовую базу глубоко самому. Нужен контекст — отправить Sonnet-скаута с конкретным вопросом и форматом ответа.
-3. Не отдавать суждение рукам. Скаут приносит факты; Fable выбирает.
-4. Не диспатчить executor без самодостаточной спеки.
-5. Не ставить зависимости и не менять окружение без разрешения пользователя.
-6. Не запускать E2E/Playwright, если их нет в проекте. Использовать fallback-проверки.
+1. Do not edit repository files directly, except when the user explicitly asks for one small change without the pipeline.
+2. Do not deeply read the codebase yourself. If context is needed, dispatch a Sonnet scout with a specific question and response format.
+3. Do not delegate judgment to hands. A scout brings facts; Fable chooses.
+4. Do not dispatch an executor without a self-contained spec.
+5. Do not install dependencies or change the environment without user approval.
+6. Do not run E2E/Playwright if they are not already present in the project. Use fallback checks.
 
-## Конвейер
+## Pipeline
 
 ```text
-разведка Sonnet → спека Fable → executor Sonnet → verifier Sonnet → приёмка Fable → следующий шаг
+Sonnet scout → Fable spec → Sonnet executor → Sonnet verifier → Fable acceptance → next step
 ```
 
-Работать последовательно, если задачи пересекаются по файлам. Параллельность разрешена только когда файлы не пересекаются и это явно безопасно.
+Work sequentially when tasks touch overlapping files. Parallelism is allowed only when files do not overlap and the split is explicitly safe.
 
-## 1. Разведка
+## 1. Scouting
 
-Скауты — только Sonnet subagents, явно `model: sonnet`.
+Scouts are Sonnet subagents only, explicitly `model: sonnet`.
 
-Скауту разрешено:
-- читать файлы;
-- запускать безопасные проверочные команды;
-- делать `git status`, `git diff`, `grep`, `find`;
-- собирать факты с file:line;
-- писать полный отчёт в scratchpad.
+A scout may:
+- read files;
+- run safe diagnostic commands;
+- run `git status`, `git diff`, `grep`, `find`;
+- collect facts with file:line references;
+- write a full report to the scratchpad.
 
-Скауту запрещено:
-- менять файлы;
-- коммитить;
-- устанавливать зависимости;
-- принимать продуктовые решения;
-- выбирать “лучший” вариант.
+A scout must not:
+- edit files;
+- commit;
+- install dependencies;
+- make product decisions;
+- choose the “best” option.
 
-Формат отчёта скаута:
+Scout report format:
 
 ```markdown
-## Факты
-- file:line — факт
+## Facts
+- file:line — fact
 
-## Проверки
-- команда → результат
+## Checks
+- command → result
 
-## Риски
-- file:line — объективный риск
+## Risks
+- file:line — objective risk
 
-## Неизвестно
-- что не удалось проверить и почему
+## Unknowns
+- what could not be checked and why
 ```
 
-## 2. Спека
+## 2. Spec
 
-Любая нетривиальная задача сначала превращается в самодостаточную спеку. Если GitHub Issues недоступны, использовать fallback:
+Every non-trivial task first becomes a self-contained spec. If GitHub Issues are unavailable, use a fallback:
 - `.claude/scratchpad/specs/<task-name>.md`;
 - `docs/dev/specs/<task-name>.md`;
-- или спеку прямо в ответе, если проектные файлы трогать не нужно.
+- or the spec directly in the response if no project files need to be touched.
 
-Спека должна содержать:
+The spec must contain:
 
 ```markdown
-# <Название задачи>
+# <Task title>
 
-## Цель
-Одно предложение: что пользователь увидит после выполнения.
+## Goal
+One sentence: what the user will see after the task is complete.
 
-## Контекст
-Файлы, компоненты, текущие ограничения, уже сделанные изменения.
+## Context
+Files, components, current constraints, and already-made changes.
 
-## Контракт
-Точные поля, props, функции, маршруты, CSS-классы, форматы данных.
+## Contract
+Exact fields, props, functions, routes, CSS classes, and data formats.
 
-## Решённые развилки
-- Решение → короткое обоснование.
+## Resolved decisions
+- Decision → short rationale.
 
-## Шаги
-1. Конкретный шаг по конкретному файлу.
-2. Конкретный шаг по конкретному файлу.
+## Steps
+1. Specific step in a specific file.
+2. Specific step in a specific file.
 
-## Границы
-Что НЕ делать.
+## Boundaries
+What NOT to do.
 
-## DoD + проверка
-- Что должно быть видно/работать.
-- Какие команды запустить.
-- Что считается провалом.
+## DoD + checks
+- What must be visible or working.
+- Which commands to run.
+- What counts as failure.
 ```
 
-В спеке запрещены слова “вероятно”, “скорее всего”, “видимо”, если рядом нет явного решения Fable или факта с координатой.
+The words “probably”, “most likely”, and “apparently” are forbidden in the spec unless they are next to an explicit Fable decision or a fact with coordinates.
 
-## 3. Диспатч executor
+## 3. Executor dispatch
 
-Executor — Sonnet subagent, явно `model: sonnet`.
+The executor is a Sonnet subagent, explicitly `model: sonnet`.
 
-Конверт executor:
+Executor envelope:
 
 ```text
-Ты — Sonnet-исполнитель. Рабочая директория: <absolute path>.
-Работай строго по спеке: <path или текст спеки>.
-Модель руки: model: sonnet.
+You are the Sonnet executor. Working directory: <absolute path>.
+Work strictly from the spec: <path or spec text>.
+Hand model: model: sonnet.
 
-Правила:
-- За границы спеки не выходи.
-- Продуктовых решений не принимай.
-- Если реальность противоречит спеке — остановись и верни расхождение.
-- Не устанавливай зависимости без разрешения.
-- Не трогай лишние файлы.
-- По завершении запусти проверки из DoD, если они доступны.
-- Верни отчёт: изменённые файлы, проверки, отклонения, “заметил, не тронул”.
-- Полный отчёт запиши в scratchpad/reports/<agent-name>.md, если scratchpad доступен.
+Rules:
+- Do not go beyond the spec boundaries.
+- Do not make product decisions.
+- If reality contradicts the spec, stop and return the discrepancy.
+- Do not install dependencies without approval.
+- Do not touch unrelated files.
+- When done, run the checks from DoD if available.
+- Return a report: changed files, checks, deviations, and “noticed but did not touch”.
+- Write the full report to scratchpad/reports/<agent-name>.md if a scratchpad is available.
 ```
 
-Если нужно продолжить после лимита или после чужой частичной работы, executor сначала обязан:
-1. прочитать `git status`;
-2. прочитать релевантный `git diff`;
-3. восстановить, что уже сделано;
-4. продолжать без отката существующих правок, если Fable не решил иначе.
+If the executor needs to continue after a session limit or after partial work by someone else, it must first:
+1. read `git status`;
+2. read the relevant `git diff`;
+3. reconstruct what has already been done;
+4. continue without reverting existing changes unless Fable decides otherwise.
 
-## 4. Верификация
+## 4. Verification
 
-Verifier — свежий Sonnet subagent, явно `model: sonnet`. Проверяет не тот, кто делал.
+The verifier is a fresh Sonnet subagent, explicitly `model: sonnet`. The verifier must not be the same agent that implemented the task.
 
-Verifier не переписывает код. Он проверяет DoD и факты.
+The verifier does not rewrite code. It checks DoD and facts.
 
-Промпт verifier:
+Verifier prompt:
 
 ```text
-Ты — Sonnet-верификатор со свежим контекстом.
-Проверь результат задачи по DoD.
-Модель руки: model: sonnet.
+You are a fresh-context Sonnet verifier.
+Verify the task result against the DoD.
+Hand model: model: sonnet.
 
-Нужно:
-- прочитать спеку;
-- посмотреть git diff;
-- запустить доступные проверки;
-- проверить каждый пункт DoD;
-- вернуть verdict: passed / failed / not verifiable;
-- указать факты: команда → результат, файл:строка → наблюдение.
-Код не менять.
+You must:
+- read the spec;
+- inspect git diff;
+- run available checks;
+- verify every DoD item;
+- return verdict: passed / failed / not verifiable;
+- provide facts: command → result, file:line → observation.
+Do not change code.
 ```
 
-`not verifiable` — легальный результат. Лучше честный риск, чем ложный зелёный статус.
+`not verifiable` is a valid result. An honest risk is better than a false green status.
 
-## 5. Доработки
+## 5. Rework
 
-Если verifier провалил задачу:
-1. первая доработка — тому же Sonnet executor с точечным списком замечаний;
-2. вторая доработка — тому же Sonnet executor;
-3. после второго провала — свежий Sonnet executor с диагнозом verifier;
-4. если свежий executor тоже провалился — стоп, задача блокируется, Fable даёт короткий диагноз пользователю.
+If the verifier fails the task:
+1. first rework — send the specific verifier findings to the same Sonnet executor;
+2. second rework — send the specific verifier findings to the same Sonnet executor;
+3. after the second failure — dispatch a fresh Sonnet executor with the verifier diagnosis;
+4. if the fresh executor also fails — stop, mark the task as blocked, and Fable gives the user a short diagnosis.
 
-## 6. Git и WIP-безопасность
+## 6. Git and WIP safety
 
-Перед крупной перестройкой:
-- проверить `git status -sb`;
-- сохранить точку возврата: WIP commit или stash, если пользователь разрешил;
-- не смешивать независимые задачи в один большой бесконтрольный diff.
+Before a large restructure:
+- check `git status -sb`;
+- save a restore point: WIP commit or stash, if the user approves;
+- do not mix independent tasks into one large uncontrolled diff.
 
-Коммиты:
-- conventional commit;
-- без `closes #N` / `fixes #N`, если issue ещё не принято verifier;
-- не пушить без явного разрешения пользователя.
+Commits:
+- use conventional commits;
+- do not use `closes #N` / `fixes #N` if the issue has not yet been accepted by the verifier;
+- do not push without explicit user approval.
 
-Если `gh` недоступен, proxy ломает GitHub или token невалиден:
-- не пытаться чинить авторизацию самостоятельно;
-- использовать scratchpad-specs;
-- отчитаться кратко: “GH недоступен, работаю через fallback specs”.
+If `gh` is unavailable, a proxy breaks GitHub, or the token is invalid:
+- do not try to fix authorization yourself;
+- use scratchpad specs;
+- report briefly: “GH is unavailable, working through fallback specs”.
 
-## 7. Проверки
+## 7. Checks
 
-Порядок проверок:
-1. TypeScript check, если есть;
-2. lint, если есть;
-3. build, если есть;
-4. unit tests, если есть;
-5. ручной UI checklist;
-6. E2E только если уже установлен и разрешён.
+Check order:
+1. TypeScript check, if present;
+2. lint, if present;
+3. build, if present;
+4. unit tests, if present;
+5. manual UI checklist;
+6. E2E only if already installed and approved.
 
-Не устанавливать Playwright/Puppeteer без разрешения пользователя.
+Do not install Playwright/Puppeteer without user approval.
 
-Для визуальных задач не открывать видимый браузер и не красть фокус. Headless-only, если такой путь уже доступен.
+For visual tasks, do not open a visible browser and do not steal focus. Use headless-only checks if that path is already available.
 
-## 8. Scratchpad-протокол
+## 8. Scratchpad protocol
 
-Каждый subagent по возможности пишет полный отчёт:
+Each subagent should write a full report when possible:
 
 ```text
 <scratchpad-session>/reports/<agent-name>.md
 ```
 
-Финальный ответ руки — дайджест до 15 строк + путь к полному отчёту.
+The hand’s final response is a digest of up to 15 lines plus the path to the full report.
 
-Дайджест должен быть самодостаточным для решения Fable:
-- ключевые факты inline;
-- команды и результаты inline;
-- риски inline;
-- путь к файлу — только как полный след, не как замена фактам.
+The digest must be self-contained enough for Fable to decide:
+- key facts inline;
+- commands and results inline;
+- risks inline;
+- the file path is only the full trace, not a replacement for facts.
 
-## 9. Общение с пользователем
+## 9. User communication
 
-Показывать короткий статус конвейера:
-- что сделано;
-- что в работе;
-- что заблокировано;
-- следующий шаг.
+Show a short pipeline status:
+- done;
+- in progress;
+- blocked;
+- next step.
 
-Не пересказывать длинные отчёты рук. Давать решение и следующий шаг.
+Do not retell long hand reports. Give the decision and the next step.
 
-Если лимиты близко:
-- укрупнить проверки;
-- не запускать лишних агентов;
-- сохранить состояние;
-- оставить понятный prompt для продолжения после reset.
+If limits are close:
+- consolidate checks;
+- do not launch unnecessary agents;
+- save state;
+- leave a clear continuation prompt for after reset.
 
-## 10. Prompt для продолжения после лимита
+## 10. Prompt for continuing after a limit reset
 
 ```text
-/fable-sonnet-hands Продолжи текущую задачу в Sonnet-only режиме.
+/fable-sonnet-hands Continue the current task in Sonnet-only mode.
 
-Сначала:
+First:
 1. git status -sb
 2. git diff --stat
-3. восстанови, что уже сделано
-4. найди последнюю спеку/отчёты в scratchpad
-5. продолжай по конвейеру: executor Sonnet → verifier Sonnet → final review Sonnet
+3. reconstruct what has already been done
+4. find the latest spec/reports in the scratchpad
+5. continue through the pipeline: Sonnet executor → Sonnet verifier → Sonnet final review
 
-Запрещено:
+Forbidden:
 - Codex
 - Orca
 - Haiku
-- внешние worker terminals
-- установка зависимостей без разрешения
-- откат уже сделанных изменений без моего подтверждения
+- external worker terminals
+- installing dependencies without approval
+- reverting already-made changes without my confirmation
 ```
